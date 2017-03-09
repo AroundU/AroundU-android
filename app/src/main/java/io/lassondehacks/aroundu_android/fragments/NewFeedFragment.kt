@@ -1,5 +1,6 @@
 package io.lassondehacks.aroundu_android.fragments
 
+import android.content.Context
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v4.widget.SwipeRefreshLayout
@@ -9,36 +10,94 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 
 import io.lassondehacks.aroundu_android.R
+import io.lassondehacks.aroundu_android.domain.Post
+import io.lassondehacks.aroundu_android.services.FeedService
+import io.lassondehacks.aroundu_android.services.LocationService
 import java.util.*
 
-class NewFeedFragment : Fragment() {
+class NewFeedFragment(var ctx: Context) : Fragment() {
+
+    var postObjects: List<Post> = arrayListOf<Post>()
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+    }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val view = inflater?.inflate(R.layout.fragment_new_feed, container, false)
-        val swiperefresh = (view?.findViewById(R.id.swiperefresh) as SwipeRefreshLayout)
-        (view?.findViewById(R.id.swiperefresh) as SwipeRefreshLayout).setOnRefreshListener {
+        val swiperefresh = (view?.findViewById(R.id.swiperefresh2) as SwipeRefreshLayout)
+        (view?.findViewById(R.id.swiperefresh2) as SwipeRefreshLayout).setOnRefreshListener {
             val thread = Thread {
-                Thread.sleep(1000)
+                refreshFeed()
                 activity.runOnUiThread {
                     swiperefresh.isRefreshing = false
                 }
             }
             thread.start()
         }
-        for (i in 0..10) {
-            val ft = fragmentManager.beginTransaction()
+        return view
+    }
+
+    override fun onActivityCreated(savedInstanceState: Bundle?) {
+        super.onActivityCreated(savedInstanceState)
+        val thread = Thread {
+            if (postObjects.size == 0) {
+                refreshFeed()
+            } else {
+                populatePostCards()
+            }
+        }
+        thread.start()
+    }
+
+    fun refreshFeed() {
+        val preferences = ctx.getSharedPreferences("prefs", Context.MODE_PRIVATE)
+        FeedService.getNewFeedPosts(
+                LocationService.lastLocation?.latitude,
+                LocationService.lastLocation?.longitude,
+                preferences.getString("saved_user_cookie", ""),
+                { err, posts ->
+                    if (err == null) {
+                        this.postObjects = posts
+                        populatePostCards()
+                    }
+                }
+        )
+    }
+
+    fun populatePostCards() {
+        (view?.findViewById(R.id.cards_container2) as LinearLayout).removeAllViews()
+        val ft = fragmentManager.beginTransaction()
+        for (post in postObjects) {
+            var currentLatitude: Float = LocationService.lastLocation?.latitude?.toFloat() ?: 0.0f
+            var currentLongitude: Float = LocationService.lastLocation?.longitude?.toFloat() ?: 0.0f
+            var distance = distanceBetweenPoints(currentLatitude, currentLongitude, post.latitude, post.longitude)
             ft.add(
-                    R.id.cards_container,
+                    R.id.cards_container2,
                     PostCardFragment(
-                            "Post ${Random().nextInt(1000)}",
-                            Date((Random().nextInt(1988694341).toLong())),
-                            Random().nextInt(1000),
-                            Random().nextInt(50),
-                            200
+                            post,
+                            ctx,
+                            post.description,
+                            post.timestamp,
+                            distance.toInt(),
+                            post.comments.size,
+                            post.upvotes - post.downvotes,
+                            post.media.thumbnail,
+                            post.upvoted
                     )
             )
-            ft.commit()
         }
-        return view
+        ft.commit()
+    }
+
+    fun distanceBetweenPoints(latitude1: Float, longitude1: Float, latitude2: Float, longitude2: Float): Double {
+        val d2r = (Math.PI / 180.0)
+        val dlong = (longitude2 - longitude1) * d2r
+        val dlat = (latitude2 - latitude1) * d2r
+        val a = Math.pow(Math.sin(dlat / 2.0), 2.0) + Math.cos(latitude1 * d2r) * Math.cos(latitude2 * d2r) * Math.pow(Math.sin(dlong / 2.0), 2.0)
+        val c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+        val d = 6367 * c
+
+        return d
     }
 }

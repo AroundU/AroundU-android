@@ -42,4 +42,5 @@
             android:layout_width="match_parent"
             android:layout_height="fill_parent"
             android:layout_below="@id/tab_layout"/>
+    <include layout="@layout/fab_layout" android:visibility="visible"/>
 </RelativeLayout>

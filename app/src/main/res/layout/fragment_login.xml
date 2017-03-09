@@ -34,7 +34,7 @@
                       android:inputType="textEmailAddress"
                       android:hint="Email" android:textColorHint="@color/primary_text"
                       android:textColorLink="@color/primary_text" android:textColorHighlight="@color/primary_text"
-                      android:textColor="@color/primary_text"/>
+                      android:textColor="@color/primary_text" android:text="gabriel"/>
         </android.support.design.widget.TextInputLayout>
 
         <!-- Password Label -->
@@ -50,7 +50,7 @@
                       android:inputType="textPassword"
                       android:hint="Password" android:textColorLink="@color/primary_text"
                       android:textColorHint="@color/primary_text" android:textColorHighlight="@color/primary_text"
-                      android:textColor="@color/primary_text"/>
+                      android:textColor="@color/primary_text" android:text="gaben"/>
         </android.support.design.widget.TextInputLayout>
 
         <android.support.v7.widget.AppCompatButton
